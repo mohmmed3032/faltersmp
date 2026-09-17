@@ -44,7 +44,7 @@ const cast: CastMember[] = [
       "Part of the crew. A familiar face in the world of Falter SMP.",
     image: "/cast/rednax.png",
     youtube: "https://www.youtube.com/@Rednax600",
-    imageFit: "cover",
+    imageFit: "contain",
     imagePosition: "center",
     accentColor: "var(--blaze)",
   },
