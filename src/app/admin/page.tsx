@@ -237,7 +237,9 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {Object.entries(app.answers).map(([key, value]) => (
+                    {Object.entries(app.answers)
+                      .filter(([key]) => key !== "discordUsername")
+                      .map(([key, value]) => (
                       <div key={key}>
                         <span className="font-body text-[9px] tracking-[0.2em] uppercase text-ash-muted block mb-1">
                           {key === "why"
