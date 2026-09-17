@@ -25,37 +25,69 @@ const ROLE_LABELS: Record<string, string> = {
   trusted: "Trusted",
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  discordUsername: "Discord Username",
+  minecraftUsername: "Minecraft Username",
+  activity: "Activity Level",
+  buildingExperience: "Building Experience",
+  minecraftEdition: "Minecraft Edition",
+  commitment: "Commitment Acknowledgement",
+  age: "Age",
+  whyTrusted: "Why Trusted?",
+  leakAcknowledgement: "Leak Acknowledgement",
+  whyBetter: "Why Better Than Others?",
+  anythingElse: "Anything Else?",
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"pending" | "history">("pending");
   const [filterRole, setFilterRole] = useState<string>("");
-  const filterStatusDefault = "pending";
-  const [filterStatus, setFilterStatus] = useState(filterStatusDefault);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Application | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const fetchApplications = useCallback(async () => {
     const params = new URLSearchParams();
     if (filterRole) params.set("role", filterRole);
-    if (filterStatus) params.set("status", filterStatus);
+    if (activeTab === "pending") {
+      params.set("status", "pending");
+    } else {
+      // History: show accepted + declined
+      // API doesn't support multiple statuses, so fetch all and filter client-side
+      // Alternatively, pass no status filter and filter here
+    }
 
     try {
-      const res = await fetch(`/api/admin/applications?${params}`);
+      const url = activeTab === "pending"
+        ? `/api/admin/applications?${params}`
+        : `/api/admin/applications${filterRole ? `?role=${filterRole}` : ""}`;
+
+      const res = await fetch(url);
       if (res.status === 401) {
         router.push("/admin/login");
         return;
       }
       const data = await res.json();
-      setApplications(data);
+
+      if (activeTab === "history") {
+        // Filter to only accepted and declined
+        setApplications(data.filter((app: Application) => app.status === "accepted" || app.status === "declined"));
+      } else {
+        setApplications(data);
+      }
     } catch {
       console.error("Failed to fetch applications");
     } finally {
       setLoading(false);
     }
-  }, [filterRole, filterStatus, router]);
+  }, [filterRole, activeTab, router]);
 
   useEffect(() => {
+    setLoading(true);
     fetchApplications();
   }, [fetchApplications]);
 
@@ -81,6 +113,27 @@ export default function AdminDashboard() {
       console.error("Failed to update application");
     } finally {
       setActionLoading(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      const res = await fetch("/api/admin/applications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteTarget.id }),
+      });
+
+      if (res.ok) {
+        setApplications((prev) => prev.filter((app) => app.id !== deleteTarget.id));
+        setDeleteTarget(null);
+      }
+    } catch {
+      console.error("Failed to delete application");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -115,6 +168,30 @@ export default function AdminDashboard() {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 border-b border-ash-muted/10">
+          <button
+            onClick={() => { setActiveTab("pending"); setExpandedId(null); }}
+            className={`font-body text-[11px] tracking-[0.15em] uppercase px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+              activeTab === "pending"
+                ? "border-crimson text-ash"
+                : "border-transparent text-ash-muted hover:text-ash-dim"
+            }`}
+          >
+            Pending
+          </button>
+          <button
+            onClick={() => { setActiveTab("history"); setExpandedId(null); }}
+            className={`font-body text-[11px] tracking-[0.15em] uppercase px-4 py-2.5 border-b-2 transition-colors -mb-px ${
+              activeTab === "history"
+                ? "border-crimson text-ash"
+                : "border-transparent text-ash-muted hover:text-ash-dim"
+            }`}
+          >
+            History
+          </button>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <select
@@ -125,17 +202,6 @@ export default function AdminDashboard() {
             <option value="">All Roles</option>
             <option value="builder">Builder</option>
             <option value="trusted">Trusted</option>
-          </select>
-
-          <select
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setLoading(true); }}
-            className="bg-ember-black border border-ash-muted/15 px-3 py-2 font-body text-xs text-ash focus:outline-none focus:border-crimson/60"
-          >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="accepted">Accepted</option>
-            <option value="declined">Declined</option>
           </select>
 
           <span className="font-body text-[10px] text-ash-muted ml-auto">
@@ -150,7 +216,9 @@ export default function AdminDashboard() {
           </div>
         ) : applications.length === 0 ? (
           <div className="text-center py-16 border border-ash-muted/10">
-            <p className="font-body text-sm text-ash-muted">No applications found.</p>
+            <p className="font-body text-sm text-ash-muted">
+              {activeTab === "pending" ? "No pending applications." : "No past applications."}
+            </p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -161,7 +229,7 @@ export default function AdminDashboard() {
               >
                 {/* Row header */}
                 <div
-                  className="flex items-center gap-4 px-4 py-3 cursor-pointer hover:bg-ash-muted/5 transition-colors"
+                  className="flex items-center gap-3 sm:gap-4 px-4 py-3 cursor-pointer hover:bg-ash-muted/5 transition-colors"
                   onClick={() => setExpandedId(expandedId === app.id ? null : app.id)}
                 >
                   {/* Role badge */}
@@ -179,7 +247,7 @@ export default function AdminDashboard() {
                     {formatDate(app.created_at)}
                   </span>
 
-                  {/* Status badge or action buttons */}
+                  {/* Actions */}
                   {app.status === "pending" ? (
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
@@ -198,14 +266,22 @@ export default function AdminDashboard() {
                       </button>
                     </div>
                   ) : (
-                    <span className={`font-body text-[10px] tracking-[0.15em] uppercase px-3 py-1 border ${STATUS_COLORS[app.status]}`}>
-                      {app.status}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`font-body text-[10px] tracking-[0.15em] uppercase px-3 py-1 border ${STATUS_COLORS[app.status]}`}>
+                        {app.status}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeleteTarget(app); }}
+                        className="font-body text-[10px] tracking-[0.15em] uppercase px-3 py-1.5 text-blaze/60 hover:text-blaze hover:bg-blaze/10 border border-transparent hover:border-blaze/30 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   )}
 
                   {/* Expand chevron */}
                   <svg
-                    className={`w-4 h-4 text-ash-muted transition-transform ${expandedId === app.id ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-ash-muted transition-transform flex-shrink-0 ${expandedId === app.id ? "rotate-180" : ""}`}
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -242,15 +318,7 @@ export default function AdminDashboard() {
                       .map(([key, value]) => (
                       <div key={key}>
                         <span className="font-body text-[9px] tracking-[0.2em] uppercase text-ash-muted block mb-1">
-                          {key === "why"
-                            ? "Why this role?"
-                            : key === "experience"
-                              ? "Experience"
-                              : key === "portfolio"
-                                ? "Portfolio / Links"
-                                : key === "age"
-                                  ? "Age"
-                                  : key}
+                          {FIELD_LABELS[key] || key}
                         </span>
                         <p className="font-body text-sm text-ash leading-relaxed whitespace-pre-wrap">
                           {value}
@@ -272,6 +340,45 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-void/80 backdrop-blur-sm"
+            onClick={() => !deleteLoading && setDeleteTarget(null)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-ember-black border border-ash-muted/15 p-6 max-w-sm w-full">
+            <h3 className="font-display text-lg tracking-[0.08em] text-ash mb-2">
+              DELETE APPLICATION
+            </h3>
+            <p className="font-body text-sm text-ash-dim leading-relaxed mb-6">
+              Are you sure you want to delete the application from{" "}
+              <span className="text-ash">{deleteTarget.discord_username}</span>?
+              This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleteLoading}
+                className="font-body text-[11px] tracking-[0.15em] uppercase px-4 py-2 border border-ash-muted/20 text-ash-dim hover:text-ash hover:border-ash-muted/40 transition-colors disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteLoading}
+                className="font-body text-[11px] tracking-[0.15em] uppercase px-4 py-2 bg-blaze/20 text-blaze border border-blaze/30 hover:bg-blaze/30 transition-colors disabled:opacity-40"
+              >
+                {deleteLoading ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -80,3 +80,28 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// DELETE — remove an application
+export async function DELETE(request: NextRequest) {
+  let body: { id?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const { id } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: "Missing application id." }, { status: 400 });
+  }
+
+  try {
+    await sql()`DELETE FROM applications WHERE id = ${id}`;
+  } catch (err) {
+    console.error("Database delete error:", err);
+    return NextResponse.json({ error: "Failed to delete application." }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}
