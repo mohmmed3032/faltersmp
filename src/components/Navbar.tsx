@@ -47,10 +47,10 @@ export default function Navbar() {
             </a>
           ))}
           <a
-            href="#discord"
+            href="/apply"
             className="font-body text-[11px] tracking-[0.2em] uppercase bg-crimson text-ash px-5 py-2.5 hover:bg-blaze transition-colors duration-300"
           >
-            Join
+            Apply
           </a>
         </div>
 
@@ -85,11 +85,11 @@ export default function Navbar() {
                 </a>
               ))}
               <a
-                href="#discord"
+                href="/apply"
                 onClick={() => setMobileOpen(false)}
                 className="font-body text-[11px] tracking-[0.2em] uppercase bg-crimson text-ash px-5 py-2.5 mt-4 w-full text-center hover:bg-blaze transition-colors"
               >
-                Join
+                Apply
               </a>
             </div>
           </motion.div>
