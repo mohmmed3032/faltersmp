@@ -18,9 +18,23 @@ export default function Hero() {
 
   return (
     <section ref={ref} id="home" className="relative min-h-screen overflow-hidden flex flex-col justify-end">
+      {/* Background video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        poster="/thunder-poster.jpg"
+        className="absolute inset-0 w-full h-full object-cover z-0"
+      >
+        <source src="/thunder.mp4" type="video/mp4" />
+      </video>
+      {/* Dark overlay for legibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-crimson/30 via-void/20 to-void/80 z-[1]" />
+
       {/* Grid background */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none z-[2]"
         style={{
           backgroundImage:
             "linear-gradient(rgba(242,230,220,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(242,230,220,0.015) 1px, transparent 1px)",
@@ -28,15 +42,10 @@ export default function Hero() {
         }}
       />
 
-      {/* Ambient glows */}
-      <div className="ambient-glow w-[500px] h-[500px] bg-crimson/8 top-[10%] left-[-10%]" />
-      <div className="ambient-glow w-[400px] h-[400px] bg-molten/5 bottom-[5%] right-[-5%]" />
-      <div className="ambient-glow w-[300px] h-[300px] bg-gold/4 top-[30%] right-[10%]" />
-
       {/* Ghost watermark */}
       <motion.div
         style={{ y: ghostY }}
-        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+        className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-[2]"
       >
         <span
           className="font-display tracking-[0.15em] text-ash/[0.02]"
@@ -47,7 +56,7 @@ export default function Hero() {
       </motion.div>
 
       {/* Decorative lines */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[2]">
         <div
           className="absolute"
           style={{
@@ -164,7 +173,7 @@ export default function Hero() {
       </motion.div>
 
       {/* Section vignette */}
-      <div className="section-vignette" />
+      <div className="section-vignette z-[3]" />
 
       {/* Scroll indicator */}
       <motion.div
