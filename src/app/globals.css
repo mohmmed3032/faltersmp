@@ -105,3 +105,10 @@ body {
 /* Scrollbar */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Mobile: static grain (no animation) */
+@media (max-width: 768px) {
+  .film-grain {
+    animation: none;
+  }
+}

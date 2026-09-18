@@ -25,7 +25,7 @@ export default function Hero() {
         muted
         playsInline
         poster="/thunder-poster.jpg"
-        className="absolute inset-0 w-full h-full object-cover z-0"
+        className="absolute inset-0 w-full h-full object-cover z-0 hidden sm:block"
       >
         <source src="/thunder.mp4" type="video/mp4" />
       </video>
